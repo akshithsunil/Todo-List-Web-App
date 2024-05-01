@@ -1,4 +1,3 @@
-from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
@@ -10,6 +9,10 @@ from django.contrib.auth import login
 from django.contrib.auth.views import LogoutView as DjangoLogoutView
 from django.urls import reverse_lazy
 from .models import Task
+from .forms import PositionForm
+from django.views import View
+from django.shortcuts import redirect
+from django.db import transaction
 
 
 class CustomLoginView(LoginView):
@@ -94,3 +97,14 @@ class TaskDelete(LoginRequiredMixin, DeleteView):
     template_name = 'base/task_confirm_delete.html'
     success_url = reverse_lazy('tasks')
 
+class TaskReorder(View):
+    def post(self, request):
+        form = PositionForm(request.POST)
+
+        if form.is_valid():
+            positionList = form.cleaned_data["position"].split(',')
+
+            with transaction.atomic():
+                self.request.user.set_task_order(positionList)
+
+        return redirect(reverse_lazy('tasks'))
